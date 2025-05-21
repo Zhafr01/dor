@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sebuah Pertanyaan Penting</title>
+    <style id="theme-style">
+        /* DESAIN DEFAULT (Seperti sebelumnya dengan sedikit penyesuaian) */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f8ff; /* Alice Blue - sedikit lebih lembut */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            overflow: hidden;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: white;
+            padding: 50px 70px;
+            border-radius: 20px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+            animation: fadeInContainer 0.8s ease-out;
+        }
+        @keyframes fadeInContainer {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        h1 {
+            color: #333;
+            font-size: 2.8em;
+            margin-bottom: 35px;
+            font-weight: 600;
+        }
+        .buttons {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            min-height: 60px; /* Memberi ruang agar tombol 'No' tidak langsung keluar container saat pertama kali bergerak */
+        }
+        button {
+            padding: 18px 35px;
+            font-size: 1.3em;
+            cursor: pointer;
+            border: none;
+            border-radius: 10px;
+            transition: all 0.3s ease; /* Transisi lebih halus untuk semua properti */
+            font-weight: 500;
+        }
+        #yesButton {
+            background-color: #ff69b4; /* Pink cerah */
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 105, 180, 0.4);
+        }
+        #yesButton:hover {
+            background-color: #ff85c1;
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 6px 20px rgba(255, 105, 180, 0.5);
+        }
+        #noButton {
+            background-color: #777; /* Abu-abu netral */
+            color: white;
+            position: absolute; /* Diperlukan untuk pergerakan */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        #noButton:hover {
+            background-color: #555;
+            transform: translateY(-3px); /* Efek hover kecil sebelum bergerak */
+        }
+        /* Styling untuk pilihan tema */
+        .theme-selector {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        .theme-selector label {
+            margin-right: 5px;
+            font-size: 0.9em;
+        }
+        .theme-selector select {
+            padding: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="theme-selector">
+        <label for="theme-switcher">Pilih Tema:</label>
+        <select id="theme-switcher">
+            <option value="default">Default Manis</option>
+            <option value="dark">Gelap Elegan</option>
+            <option value="playful">Ceria & Warna</option>
+        </select>
+    </div>
+
+    <div class="container">
+        <h1>So you want to be mine?</h1>
+        <div class="buttons">
+            <button id="yesButton">Yes</button>
+            <button id="noButton" style="left: 150px;">No</button> </div>
+    </div>
+
+    <audio id="neinSound" src="nein.mp3" preload="auto"></audio>
+
+    <script>
+        const noButton = document.getElementById('noButton');
+        const yesButton = document.getElementById('yesButton');
+        const container = document.querySelector('.container');
+        const neinSound = document.getElementById('neinSound');
+        const themeSwitcher = document.getElementById('theme-switcher');
+        const themeStyle = document.getElementById('theme-style');
+
+        let noButtonInitialLeft = noButton.offsetLeft; // Simpan posisi awal X
+        let noButtonInitialTop = noButton.offsetTop;   // Simpan posisi awal Y
+
+        // Fungsi untuk memainkan suara
+        function playNeinSound() {
+            neinSound.currentTime = 0; // Putar dari awal jika sudah pernah diputar
+            neinSound.play().catch(error => {
+                // Tangani error jika browser memblokir autoplay
+                console.warn("Pemutaran suara diblokir oleh browser:", error);
+                // Anda bisa menampilkan notifikasi ke pengguna di sini jika perlu
+            });
+        }
+
+        // Fungsi untuk memindahkan tombol 'No' secara acak
+        function moveButton() {
+            playNeinSound(); // Mainkan suara setiap kali tombol bergerak
+
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const buttonWidth = noButton.offsetWidth;
+            const buttonHeight = noButton.offsetHeight;
+            const containerRect = container.getBoundingClientRect();
+
+            // Batas area pergerakan adalah viewport, dikurangi ukuran tombol dan sedikit padding
+            const maxX = viewportWidth - buttonWidth - 20;
+            const maxY = viewportHeight - buttonHeight - 20;
+            const minX = 20;
+            const minY = 20;
+
+            let newX = Math.random() * (maxX - minX) + minX;
+            let newY = Math.random() * (maxY - minY) + minY;
+
+            // Coba agar tidak tumpang tindih dengan container utama
+            // Jika posisi baru ada di dalam container, coba pindahkan keluar
+            if (newX > containerRect.left - buttonWidth &&
+                newX < containerRect.right &&
+                newY > containerRect.top - buttonHeight &&
+                newY < containerRect.bottom) {
+                // Coba geser ke salah satu sisi container
+                const choices = ['left', 'right', 'top', 'bottom'];
+                const side = choices[Math.floor(Math.random() * choices.length)];
+
+                if (side === 'left') newX = containerRect.left - buttonWidth - 30;
+                else if (side === 'right') newX = containerRect.right + 30;
+                else if (side === 'top') newY = containerRect.top - buttonHeight - 30;
+                else newY = containerRect.bottom + 30;
+
+                // Pastikan tidak keluar viewport setelah penyesuaian
+                newX = Math.max(minX, Math.min(newX, maxX));
+                newY = Math.max(minY, Math.min(newY, maxY));
+            }
+
+            noButton.style.position = 'fixed'; // Gunakan fixed agar posisi relatif ke viewport
+            noButton.style.left = newX + 'px';
+            noButton.style.top = newY + 'px';
+        }
+
+        noButton.addEventListener('mouseover', moveButton);
+        noButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            moveButton(); // Pindahkan lagi saat diklik
+        });
+
+        yesButton.addEventListener('click', () => {
+            window.location.href = 'mine.html'; // Pastikan file mine.html ada
+        });
+
+        // Inisialisasi posisi tombol 'No'
+        // Kita set style.left secara eksplisit agar bisa dibaca oleh offsetLeft
+        // dan pastikan dia di dalam .buttons awalnya
+        document.addEventListener('DOMContentLoaded', () => {
+            const buttonsDiv = document.querySelector('.buttons');
+            noButton.style.position = 'absolute'; // Kembali ke absolute relatif ke .buttons
+            // Posisi awal relatif di dalam .buttons, sedikit di kanan 'Yes'
+            // Sesuaikan angka '150px' atau lainnya jika tombol 'Yes' lebarnya berbeda
+            // atau jika Anda ingin jarak awal yang berbeda.
+            // noButton.style.left = (yesButton.offsetLeft + yesButton.offsetWidth + 20) + 'px';
+            // noButton.style.top = yesButton.offsetTop + 'px';
+            // Untuk simpelnya, kita set manual saja
+            // Dihapus karena sudah ada inline style `style="left: 150px;"`
+        });
+
+
+        // === OPSI TEMA ===
+        const themes = {
+            default: `
+                /* DESAIN DEFAULT (Seperti sebelumnya dengan sedikit penyesuaian) */
+                body {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100vh;
+                    background-color: #f0f8ff; /* Alice Blue - sedikit lebih lembut */
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    text-align: center;
+                    overflow: hidden;
+                    padding: 20px;
+                    box-sizing: border-box;
+                }
+                .container {
+                    background-color: white;
+                    padding: 50px 70px;
+                    border-radius: 20px;
+                    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+                    animation: fadeInContainer 0.8s ease-out;
+                }
+                @keyframes fadeInContainer {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                h1 {
+                    color: #333;
+                    font-size: 2.8em;
+                    margin-bottom: 35px;
+                    font-weight: 600;
+                }
+                .buttons {
+                    position: relative;
+                    display: flex;
+                    justify-content: center;
+                    gap: 25px;
+                    min-height: 60px;
+                }
+                button {
+                    padding: 18px 35px;
+                    font-size: 1.3em;
+                    cursor: pointer;
+                    border: none;
+                    border-radius: 10px;
+                    transition: all 0.3s ease;
+                    font-weight: 500;
+                }
+                #yesButton {
+                    background-color: #ff69b4; /* Pink cerah */
+                    color: white;
+                    box-shadow: 0 4px 15px rgba(255, 105, 180, 0.4);
+                }
+                #yesButton:hover {
+                    background-color: #ff85c1;
+                    transform: translateY(-3px) scale(1.05);
+                    box-shadow: 0 6px 20px rgba(255, 105, 180, 0.5);
+                }
+                #noButton {
+                    background-color: #777;
+                    color: white;
+                    position: absolute;
+                    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+                }
+                #noButton:hover {
+                    background-color: #555;
+                    transform: translateY(-3px);
+                }
+            `,
+            dark: `
+                body {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100vh;
+                    background-color: #1e1e2f; /* Latar belakang gelap kebiruan */
+                    font-family: 'Montserrat', sans-serif; /* Font modern */
+                    text-align: center;
+                    overflow: hidden;
+                    padding: 20px;
+                    box-sizing: border-box;
+                }
+                .container {
+                    background-color: #2c2c3e; /* Kontainer sedikit lebih terang */
+                    padding: 50px 70px;
+                    border-radius: 15px;
+                    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+                    border: 1px solid #444;
+                    animation: fadeInContainer 0.8s ease-out;
+                }
+                @keyframes fadeInContainer {
+                    from { opacity: 0; transform: scale(0.95); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+                h1 {
+                    color: #e0e0ff; /* Teks putih kebiruan */
+                    font-size: 3em;
+                    margin-bottom: 40px;
+                    font-weight: 700;
+                    text-shadow: 0 0 10px rgba(173, 216, 230, 0.5); /* Bayangan neon lembut */
+                }
+                .buttons {
+                    position: relative;
+                    display: flex;
+                    justify-content: center;
+                    gap: 30px;
+                    min-height: 60px;
+                }
+                button {
+                    padding: 18px 38px;
+                    font-size: 1.35em;
+                    cursor: pointer;
+                    border: none;
+                    border-radius: 8px;
+                    transition: all 0.25s ease-in-out;
+                    font-weight: 600;
+                    letter-spacing: 0.5px;
+                }
+                #yesButton {
+                    background: linear-gradient(135deg, #8a2be2, #ff00ff); /* Gradasi ungu-magenta */
+                    color: white;
+                    box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
+                }
+                #yesButton:hover {
+                    background: linear-gradient(135deg, #9b30ff, #ff1493);
+                    transform: translateY(-2px) scale(1.03);
+                    box-shadow: 0 0 25px rgba(255, 0, 255, 0.7);
+                }
+                #noButton {
+                    background-color: #5a5a70; /* Abu-abu gelap */
+                    color: #ccc;
+                    position: absolute;
+                    box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+                }
+                #noButton:hover {
+                    background-color: #434357;
+                    transform: translateY(-2px);
+                }
+            `,
+            playful: `
+                @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@700&display=swap');
+                body {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100vh;
+                    background: radial-gradient(circle, #ffefba, #ffffff); /* Latar kuning ke putih */
+                    font-family: 'Comic Neue', cursive; /* Font komik */
+                    text-align: center;
+                    overflow: hidden;
+                    padding: 20px;
+                    box-sizing: border-box;
+                }
+                .container {
+                    background-color: #fff0c1; /* Kuning muda */
+                    padding: 40px 60px;
+                    border-radius: 30px 5px 30px 5px; /* Bentuk border unik */
+                    box-shadow: 8px 8px 0px #e4c55b; /* Bayangan solid ala kartun */
+                    border: 3px solid #d4b54b;
+                    animation: bounceIn 1s ease;
+                }
+                @keyframes bounceIn {
+                    0% { transform: scale(0.5); opacity: 0; }
+                    60% { transform: scale(1.1); }
+                    100% { transform: scale(1); opacity: 1; }
+                }
+                h1 {
+                    font-family: 'Bangers', cursive; /* Font besar ala judul komik */
+                    color: #d9534f; /* Merah oranye */
+                    font-size: 4em;
+                    margin-bottom: 30px;
+                    text-shadow: 2px 2px 0 #fff, 4px 4px 0 #000; /* Outline */
+                    letter-spacing: 2px;
+                }
+                .buttons {
+                    position: relative;
+                    display: flex;
+                    justify-content: center;
+                    gap: 20px;
+                    min-height: 70px;
+                }
+                button {
+                    padding: 15px 30px;
+                    font-size: 1.5em; /* Font lebih besar untuk tombol */
+                    font-family: 'Comic Neue', cursive;
+                    font-weight: 700;
+                    cursor: pointer;
+                    border: 3px solid #555;
+                    border-radius: 10px;
+                    transition: all 0.2s ease;
+                    box-shadow: 4px 4px 0px #999;
+                }
+                #yesButton {
+                    background-color: #5cb85c; /* Hijau */
+                    color: white;
+                }
+                #yesButton:hover {
+                    background-color: #4cae4c;
+                    transform: translate(2px, 2px); /* Efek tombol ditekan */
+                    box-shadow: 2px 2px 0px #777;
+                }
+                #yesButton:active {
+                    transform: translate(4px, 4px);
+                    box-shadow: 0px 0px 0px #999;
+                }
+                #noButton {
+                    background-color: #f0ad4e; /* Oranye */
+                    color: white;
+                    position: absolute;
+                }
+                #noButton:hover {
+                    background-color: #ec971f;
+                    transform: translate(2px, 2px);
+                    box-shadow: 2px 2px 0px #777;
+                }
+                #noButton:active {
+                    transform: translate(4px, 4px);
+                    box-shadow: 0px 0px 0px #999;
+                }
+            `
+        };
+
+        // Muat tema yang tersimpan atau default
+        const savedTheme = localStorage.getItem('selectedTheme') || 'default';
+        themeSwitcher.value = savedTheme;
+        themeStyle.innerHTML = themes[savedTheme] + `
+            .theme-selector {
+                position: fixed; top: 20px; right: 20px; padding: 10px;
+                background-color: rgba(255, 255, 255, 0.9); border-radius: 8px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;
+            }
+            .theme-selector label { margin-right: 5px; font-size: 0.9em; color: #333; }
+            .theme-selector select { padding: 5px; border-radius: 5px; border: 1px solid #ccc; font-size: 0.9em; }
+        `; // Tambahkan CSS untuk theme selector lagi karena innerHTML menimpa semua
+
+        themeSwitcher.addEventListener('change', function() {
+            const selectedTheme = this.value;
+            themeStyle.innerHTML = themes[selectedTheme] + `
+                .theme-selector {
+                    position: fixed; top: 20px; right: 20px; padding: 10px;
+                    background-color: rgba(255, 255, 255, 0.9); border-radius: 8px;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;
+                }
+                .theme-selector label { margin-right: 5px; font-size: 0.9em; color: #333; }
+                .theme-selector select { padding: 5px; border-radius: 5px; border: 1px solid #ccc; font-size: 0.9em; }
+            `;
+            localStorage.setItem('selectedTheme', selectedTheme);
+        });
+
+    </script>
+</body>
+</html>
